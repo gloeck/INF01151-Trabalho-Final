@@ -25,7 +25,8 @@ enum ServerMode{ UNKNOWN_MODE, BACKUP, BACKUP_MANAGER };
 typedef struct {
     int id;
     char hostname[256];
-    int port;           
+    int port;
+    int my_base_port;           
 } BackupArgs;
 
 typedef struct { 
