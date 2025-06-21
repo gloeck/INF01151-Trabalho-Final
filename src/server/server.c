@@ -12,6 +12,7 @@ HashTable contextTable;
 char manager_ip[256] = "";
 int manager_port = -1;
 int id = -1;
+char my_server_ip[256] = "127.0.0.1";
 
 void perror_exit(const char *msg); // Escreve a mensagem de erro e termina o programa com falha
 void *interface(void* arg); // Recebe e executa os comandos do usuário
@@ -123,11 +124,12 @@ void handle_new_connection(int sock_interface){
 }
 
 void parse_server_arguments(int argc, char *argv[]) {
-    if (argc < 3) { 
-        fprintf(stderr, "Uso: ./server ID -MODO [ip porta]\n");
+    if (argc < 4) { 
+        fprintf(stderr, "Uso: ./server ID MEU_IP -MODO [ip_manager porta_manager]\n");
 		fprintf(stderr, "ID = numero natural\n");
+        fprintf(stderr, "MEU_IP = O endereço IP desta máquina\n");
         fprintf(stderr, "MODO = M ou B (manager ou backup, respectivamente)\n");
-        fprintf(stderr, "ip e porta desnecessario se MODO = M\n");
+        fprintf(stderr, "ip_manager e porta_manager desnecessario se MODO = M\n");
         exit(1);
     }
 
@@ -137,27 +139,30 @@ void parse_server_arguments(int argc, char *argv[]) {
         exit(1);
     }
 
-    if (strcmp(argv[2], "-M") == 0) {
+	strncpy(my_server_ip, argv[2], sizeof(my_server_ip) - 1);
+    my_server_ip[sizeof(my_server_ip) - 1] = '\0';
+
+    if (strcmp(argv[3], "-M") == 0) {
         global_server_mode = BACKUP_MANAGER;
-    } else if (strcmp(argv[2], "-B") == 0) {
+    } else if (strcmp(argv[3], "-B") == 0) {
         global_server_mode = BACKUP;
 
-        if (argc < 5) { 
+        if (argc < 6) { 
             fprintf(stderr, "Necessário especificar ip e porta quando MODO = B\n");
             exit(1);
 		}
 
-        strncpy(manager_ip, argv[3], 255);
+        strncpy(manager_ip, argv[4], 255);
         manager_ip[255] = '\0'; 
 
-        manager_port = atoi(argv[4]);
+        manager_port = atoi(argv[5]);
         if (manager_port <= 0) { 
             fprintf(stderr, "Porta inválida: %s\n", argv[4]);
             exit(1);
         }
 
     } else {
-        fprintf(stderr, "Modo inválido: %s\n", argv[2]);
+        fprintf(stderr, "Modo inválido: %s\n", argv[3]);
         fprintf(stderr, "Uso: ./server ID -MODO [ip porta]\n");
 		fprintf(stderr, "ID = numero natural\n");
         fprintf(stderr, "MODO = M ou B (manager ou backup, respectivamente)\n");
@@ -236,6 +241,7 @@ int main(int argc, char* argv[]) {
 		strncpy(args->hostname, manager_ip, sizeof(args->hostname) - 1);
 		args->hostname[sizeof(args->hostname) - 1] = '\0';
 		args->port = manager_port;
+		args->my_base_port = interface_socket_port;
 
 		pthread_create(&replication_thread, NULL, run_as_backup, (void*) args);
 		pthread_detach(replication_thread);
