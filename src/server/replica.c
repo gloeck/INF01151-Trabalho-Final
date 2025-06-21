@@ -15,6 +15,9 @@ typedef struct ReplicaNode {
 static ReplicaNode *head = NULL;
 static pthread_mutex_t replica_list_mutex;
 
+extern ReplicaNode *head; 
+extern pthread_mutex_t replica_list_mutex;
+
 static ReplicaNode *create_new_node(int socketfd, int id, struct sockaddr_in device_address) {
     ReplicaNode *new_node = (ReplicaNode *)malloc(sizeof(ReplicaNode));
     if (new_node == NULL) {
@@ -321,4 +324,35 @@ ReplicaEvent deserialize_replica_event(const char *str) {
 
     free(copy); 
     return event;
+}
+
+ReplicaEvent *create_election_event(ReplicaEvent *event, int sender_id) {
+    event->type = EVENT_ELECTION;
+    event->username = malloc(16);
+    sprintf(event->username, "%d", sender_id);
+    event->filepath = NULL;
+    memset(&event->device_address, 0, sizeof(event->device_address));
+    return event;
+}
+
+ReplicaEvent *create_election_answer_event(ReplicaEvent *event, int sender_id) {
+    event->type = EVENT_ELECTION_ANSWER;
+    event->username = malloc(16);
+    sprintf(event->username, "%d", sender_id);
+    event->filepath = NULL;
+    memset(&event->device_address, 0, sizeof(event->device_address));
+    return event;
+}
+
+ReplicaEvent *create_coordinator_event(ReplicaEvent *event, int leader_id, struct sockaddr_in leader_address) {
+    event->type = EVENT_COORDINATOR;
+    event->username = malloc(16);
+    sprintf(event->username, "%d", leader_id);
+    event->device_address = leader_address;
+    event->filepath = NULL;
+    return event;
+}
+
+ReplicaNode* get_replica_list_head() {
+    return head;
 }
